@@ -10,6 +10,7 @@
  * 
  */
 
+class UInv_InventoryComponent;
 class UInv_HUDWidget;
 class UInputAction;
 class UInputMappingContext;
@@ -22,6 +23,9 @@ public:
 	AInv_PlayerController();
 	virtual void Tick(float DeltaSeconds) override;
 
+	UFUNCTION(BlueprintCallable, Category="Inventory")
+	void ToggleInventory();
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -31,12 +35,17 @@ private:
 	void CreateHudWidget();
 	void TraceForItem();
 	
+	TWeakObjectPtr<UInv_InventoryComponent> InventoryComponent;
+	
 	UPROPERTY(EditDefaultsOnly, Category="Inventory")
 	TArray<TObjectPtr<UInputMappingContext>> DefaultIMCs;    // UE5.6 uses array of IMCs
 	//TObjectPtr<UInputMappingContext> DefaultIMC;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Inventory")
 	TObjectPtr<UInputAction> PrimaryInteractionAction;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Inventory")
+	TObjectPtr<UInputAction> ToggleInventoryAction;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Inventory")
 	TSubclassOf<UInv_HUDWidget> HUDWidgetClass;
@@ -51,6 +60,8 @@ private:
 	TEnumAsByte<ECollisionChannel> ItemTraceChannel; 
 	
 	// Line Trace Hit Actors
+	// UPROPERTY prevents a variable from being Garbage Collected
+	// TWeakObjectPtr keeps a pointer without affecting its Garbage Collection status
 	TWeakObjectPtr<AActor> ThisActor;
 	TWeakObjectPtr<AActor> LastActor;
 };

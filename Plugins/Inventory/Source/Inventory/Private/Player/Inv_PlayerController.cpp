@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
 #include "Interaction/Inv_Highlightable.h"
+#include "InventoryManagement/Components/Inv_InventoryComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/HUD/Inv_HUDWidget.h"
 #include "Items/Compnents/Inv_ItemComponent.h"
@@ -17,18 +18,6 @@ AInv_PlayerController::AInv_PlayerController()
 	PrimaryActorTick.bCanEverTick = true;
 	TraceLenght = 500.0;
 	ItemTraceChannel = ECollisionChannel::ECC_GameTraceChannel1;
-}
-
-void AInv_PlayerController::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	TraceForItem();
-}
-
-void AInv_PlayerController::BeginPlay()
-{
-	Super::BeginPlay();
-	CreateHudWidget();
 }
 
 // Called to Bind functionality to Input
@@ -49,6 +38,17 @@ void AInv_PlayerController::SetupInputComponent()
 	// INPUT BINDINGS
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 	EnhancedInputComponent->BindAction(PrimaryInteractionAction, ETriggerEvent::Started, this, &AInv_PlayerController::PrimaryInteract);
+	EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &AInv_PlayerController::ToggleInventory);
+}
+
+void AInv_PlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	// Find the BP version of Inventory Component added to BP Player Controller, and store a Weak Pointer
+	InventoryComponent = FindComponentByClass<UInv_InventoryComponent>();
+	
+	CreateHudWidget();
 }
 
 void AInv_PlayerController::CreateHudWidget()
@@ -60,6 +60,19 @@ void AInv_PlayerController::CreateHudWidget()
 	{
 		HUDWidget->AddToViewport();
 	}
+}
+
+
+void AInv_PlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	TraceForItem();
+}
+
+void AInv_PlayerController::ToggleInventory()
+{
+	if (!InventoryComponent.IsValid()) return;
+	InventoryComponent->ToggleInventoryMenu();
 }
 
 void AInv_PlayerController::TraceForItem()
@@ -90,13 +103,13 @@ void AInv_PlayerController::TraceForItem()
 	
 	if (ThisActor.IsValid())
 	{
-		// show item highlight
+		// Show item highlight -- Check for Highlightable Interface on hit actor
 		if (UActorComponent* Highlightable = ThisActor->FindComponentByInterface(UInv_Highlightable::StaticClass()); IsValid(Highlightable))
 		{
 			IInv_Highlightable::Execute_Highlight(Highlightable);
 		}
 		
-		// show pickup message
+		// Show pickup message -- Check for ItemComponent on hit actor
 		const UInv_ItemComponent* ItemComponent = ThisActor->FindComponentByClass<UInv_ItemComponent>();
 		if (!IsValid(ItemComponent)) return;
 		if (IsValid(HUDWidget)) HUDWidget->ShowPickupMessage(ItemComponent->GetPickupMessage());

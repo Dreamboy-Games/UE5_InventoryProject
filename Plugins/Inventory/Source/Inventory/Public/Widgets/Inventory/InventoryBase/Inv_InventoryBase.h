@@ -13,3 +13,4 @@ UCLASS()
 class INVENTORY_API UInv_InventoryBase : public UUserWidget {
 	GENERATED_BODY()
 };
+ 
